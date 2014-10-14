@@ -16,10 +16,6 @@ module MyMedia
   
   class Publisher
     
-    def initialize()
-      @index_page = true
-    end
-    
     def publish_dynarex(dynarex_filepath='', \
           record={title: '',url: '', raw_url: ''}, options={})
       
@@ -33,8 +29,7 @@ module MyMedia
 
       dynarex.create record, opt[:id]
       dynarex.save dynarex_filepath
-
-      publish_html(dynarex_filepath)  if @index_page == true
+      publish_html(dynarex_filepath)    
 
       
       if opt[:rss] == true then
@@ -47,8 +42,7 @@ module MyMedia
     end
 
     def publish_html(filepath)
-
-      return unless @index_page == true
+      
       path2 = File.dirname(filepath)  
 
       dataisland = DataIsland.new(path2 + '/index-template.html')
@@ -82,7 +76,6 @@ module MyMedia
                                                 'item(title:title,link:url)'
       @ext = ext
       @rss = false
-      
       Dir.chdir @home
     end
         
@@ -113,8 +106,8 @@ module MyMedia
     private
     
     def file_publish(src_path, raw_msg='')
-      
-      raise @logger.debug("source file '%s' not found" % src_path) unless File.exists? src_path
+        
+      raise @logger.debug("source file not found") unless File.exists? src_path
       ext = File.extname(src_path)
       @target_ext ||= ext
           

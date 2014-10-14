@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'mymedia'
-  s.version = '0.1.1'
+  s.version = '0.1.2'
   s.summary = 'Makes publishing to the web easier'
   s.authors = ['James Robertson']
   s.files = Dir['lib/**/*.rb']
