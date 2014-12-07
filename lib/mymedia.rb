@@ -57,6 +57,9 @@ module MyMedia
     
   end
   
+  class BaseException < Exception
+  end
+  
   class Base < Publisher
 
     attr_reader :to_s
@@ -66,6 +69,7 @@ module MyMedia
       super()
       @schema = 'posts/post(title, url, raw_url)'
       @logger = Logger.new('/tmp/mymedia.log','daily')
+      raise BaseException, "no config found" if config.nil?
 
       @home = config[:home]
       @website = config[:website]    
