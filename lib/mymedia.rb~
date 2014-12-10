@@ -69,6 +69,7 @@ module MyMedia
       super()
       @schema = 'posts/post(title, url, raw_url)'
       @logger = Logger.new('/tmp/mymedia.log','daily')
+
       raise BaseException, "no config found" if config.nil?
 
       @home = config[:home]
@@ -106,6 +107,7 @@ module MyMedia
 
       filename = DirToXML.new(@media_src).select_by_ext(@ext)\
         .sort_by(:last_modified).last[:name]  
+
       copy_publish( filename ,raw_msg)
     end
     
@@ -140,9 +142,9 @@ module MyMedia
       FileUtils.mkdir_p File.dirname(raw_destination)
       FileUtils.mkdir_p File.dirname(destination)
 
-      raw_msg = raw_msg.join if raw_msg.is_a? Array
+      raw_msg = raw_msg.join ' ' if raw_msg.is_a? Array
 
-      raw_msg = src_path[/([^\/]+)\.\w+$/,1] + ' ' + raw_msg if raw_msg
+      raw_msg = src_path[/([^\/]+)\.\w+$/,1] + ' ' + raw_msg if raw_msg[/^#/]
       
       
       if block_given? then

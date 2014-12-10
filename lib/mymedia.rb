@@ -22,7 +22,7 @@ module MyMedia
     
     def publish_dynarex(dynarex_filepath='', \
           record={title: '',url: '', raw_url: ''}, options={})
-      
+
       opt = {id: nil, rss: false}.merge(options)
       
       dynarex = if File.exists? dynarex_filepath then
@@ -48,10 +48,12 @@ module MyMedia
 
     def publish_html(filepath)
 
-      return unless @index_page == true
-      path2 = File.dirname(filepath)  
 
-      dataisland = DataIsland.new(path2 + '/index-template.html')
+      path2 = File.dirname(filepath)  
+      template_path = File.join path2, 'index-template.html'
+      return unless @index_page == true and File.exists?(template_path)
+
+      dataisland = DataIsland.new(template_path)
       File.open(path2 + '/index.html','w'){|f| f.write dataisland.html_doc.xml pretty: true}
     end    
     
@@ -65,8 +67,9 @@ module MyMedia
     attr_reader :to_s
 
     def initialize(media_type: 'blog', public_type: 'blog', ext: 'txt', config: nil)
-
+     
       super()
+
       @schema = 'posts/post(title, url, raw_url)'
       @logger = Logger.new('/tmp/mymedia.log','daily')
 
@@ -89,6 +92,7 @@ module MyMedia
       @rss = false
       
       Dir.chdir @home
+
     end
         
     def add_feed_item(raw_msg, record, options={})
@@ -170,6 +174,7 @@ module MyMedia
       raw_static_destination = "%s/%s/%s" % [@home, 'r',static_path]
 
       static_destination = "%s/%s" % [@home, static_path]    
+      #FileUtils.mkdir_p File.dirname(static_destination)
       FileUtils.cp destination, static_destination
       FileUtils.cp raw_destination, raw_static_destination
       
