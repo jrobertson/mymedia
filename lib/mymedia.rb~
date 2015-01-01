@@ -10,6 +10,7 @@ require 'sps-pub'
 require 'dir-to-xml'
 require 'dataisland'
 require 'increment'
+require 'simple-config'
 
 
 module MyMedia
@@ -68,20 +69,22 @@ module MyMedia
 
     def initialize(media_type: 'blog', public_type: 'blog', ext: 'txt', config: nil)
      
-      super()
+      super()      
 
       @schema = 'posts/post(title, url, raw_url)'
       @logger = Logger.new('/tmp/mymedia.log','daily')
 
       raise BaseException, "no config found" if config.nil?
-
-      @home = config[:home]
-      @website = config[:website]    
-      @dynamic_website = config[:dynamic_website]
-      @www = config[:www]
+            
+      c = SimpleConfig.new(config)
+      
+      @home = c[:home]
+      @website = c[:website]    
+      @dynamic_website = c[:dynamic_website]
+      @www = c[:www]
       @domain = @website[/[^\.]+\.[^\.]+$/]
 
-      @sps = config[:sps]
+      @sps = c[:sps]
       
       @media_type = media_type
       @public_type = public_type ||= @media_type
