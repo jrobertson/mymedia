@@ -21,8 +21,9 @@ module MyMedia
   
   class Publisher
     
-    def initialize()
+    def initialize(opts={})
       @index_page = true
+      @opts = opts
     end
     
     def publish_dynarex(dynarex_filepath='', \
@@ -60,7 +61,7 @@ module MyMedia
       raise MyMediaPublisherException, \
           "template path: #{template_path} not found" unless \
                                                     File.exists?(template_path)
-      dataisland = DataIsland.new(template_path)
+      dataisland = DataIsland.new(template_path, @opts)
       File.open(path2 + '/index.html','w'){|f| f.write dataisland.html_doc.xml pretty: true}
     end    
     
@@ -132,7 +133,7 @@ module MyMedia
     private
     
     def file_publish(src_path, raw_msg='')
-      
+
       raise @logger.debug("source file '%s' not found" % src_path) unless File.exists? src_path
       ext = File.extname(src_path)
       @target_ext ||= ext
@@ -140,6 +141,7 @@ module MyMedia
       public_path = "%s/%s/%shrs%s" % [@public_type, \
         Time.now.strftime('%Y/%b/%d').downcase, Time.now.strftime('%H%M'), 
                                       @target_ext]
+
       public_path2 = "%s/%s/%shrs%s%s" % [@public_type, \
         Time.now.strftime('%Y/%b/%d').downcase, Time.now.strftime('%H%M'), 
                                           Time.now.strftime('%S%2N'), @target_ext]
@@ -254,8 +256,8 @@ module MyMedia
       @index_page = c[:index_page] == 'true'
       @public_type = public_type
       @rss = rss
-      
-      
+      @opts = {username: c[:username], password: c[:password]}
+            
       @logger = Logger.new('/tmp/mymedia.log','daily')
     end
     
