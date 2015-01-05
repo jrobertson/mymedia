@@ -14,6 +14,10 @@ require 'simple-config'
 
 
 module MyMedia
+
+  class MyMediaPublisherException < Exception
+  end
+  
   
   class Publisher
     
@@ -49,11 +53,13 @@ module MyMedia
 
     def publish_html(filepath)
 
-
       path2 = File.dirname(filepath)  
       template_path = File.join path2, 'index-template.html'
-      return unless @index_page == true and File.exists?(template_path)
 
+      return unless @index_page == true 
+      raise MyMediaPublisherException, \
+          "template path: #{template_path} not found" unless \
+                                                    File.exists?(template_path)
       dataisland = DataIsland.new(template_path)
       File.open(path2 + '/index.html','w'){|f| f.write dataisland.html_doc.xml pretty: true}
     end    
@@ -245,13 +251,16 @@ module MyMedia
       c = SimpleConfig.new(config).to_h
 
       @home = c[:home]
+      @index_page = c[:index_page] == 'true'
       @public_type = public_type
       @rss = rss
+      
       
       @logger = Logger.new('/tmp/mymedia.log','daily')
     end
     
     def publish_frontpage(s='index.html')    
+
       publish_html(@home + '/' + s) 
       'frontpage published'
     end  

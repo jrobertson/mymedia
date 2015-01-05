@@ -75,8 +75,8 @@ module MyMedia
       @logger = Logger.new('/tmp/mymedia.log','daily')
 
       raise BaseException, "no config found" if config.nil?
-            
-      c = SimpleConfig.new(config)
+
+      c = SimpleConfig.new(config).to_h
       
       @home = c[:home]
       @website = c[:website]    
@@ -232,11 +232,19 @@ module MyMedia
 
   end
   
+  
+  class FrontpageException < Exception
+  end
+  
   class Frontpage < Publisher
     
-    def initialize(conf: nil, public_type: '', rss: nil)
-      
-      @home = conf[:home]
+    def initialize(config: nil, public_type: '', rss: nil)
+
+      raise FrontpageException, "no config found" if config.nil?
+
+      c = SimpleConfig.new(config).to_h
+
+      @home = c[:home]
       @public_type = public_type
       @rss = rss
       
@@ -260,6 +268,7 @@ module MyMedia
       
       publish_dynarex(dynarex_filepath, record, {rss: @rss || false})    
       publish_dynarex(raw_dynarex_filepath, record, {rss: @rss || false})          
+
       publish_timeline(raw_msg, static_url, target_url)         
  
     end
@@ -268,7 +277,8 @@ module MyMedia
     def publish_timeline(raw_msg, static_url, target_url='')
       
       timeline_filepath = "%s/timeline/dynarex.xml" % @home    
-      record = Dynarex.new(@home + '/dynarex.xml').find_by_title(@public_type)    
+
+      record = Dynarex.new(@home + '/dynarex/main-directory.xml').find_by_title(@public_type)    
       thumbnail, subject_url = record.thumbnail, record.url
       
       content = {
