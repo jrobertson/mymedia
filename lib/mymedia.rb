@@ -206,7 +206,7 @@ module MyMedia
       sps_message = ['publish', @public_type, 
                     target_url, static_url, "'" + raw_msg + "'"]            
 
-      send_message(msg: sps_msg.join(' '))
+      send_message(msg: sps_message.join(' '))
 
       static_url
       

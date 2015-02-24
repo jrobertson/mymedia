@@ -30,7 +30,7 @@ module MyMedia
           record={title: '',url: '', raw_url: ''}, options={})
 
       opt = {id: nil, rss: false}.merge(options)
-      
+
       dynarex = if File.exists? dynarex_filepath then
         Dynarex.new(dynarex_filepath)
       else
@@ -62,6 +62,7 @@ module MyMedia
           "template path: #{template_path} not found" unless \
                                                     File.exists?(template_path)
       dataisland = DataIsland.new(template_path, @opts)
+
       File.open(path2 + '/index.html','w'){|f| f.write dataisland.html_doc.xml pretty: true}
     end    
     
@@ -78,8 +79,7 @@ module MyMedia
      
       super()      
 
-      @schema = 'posts/post(title, url, raw_url)'
-      @logger = Logger.new('/tmp/mymedia.log','daily')
+      @schema = 'posts/post(title, url, raw_url)'      
 
       raise BaseException, "no config found" if config.nil?
 
@@ -92,6 +92,11 @@ module MyMedia
       @domain = @website[/[^\.]+\.[^\.]+$/]
 
       @sps = c[:sps]
+      logfile = c[:log]
+      
+      @logger = nil
+      @logger = Logger.new(logfile,'daily') if logfile
+      @logger.info('inside MyMedia::Base') if @logger
       
       @media_type = media_type
       @public_type = public_type ||= @media_type
@@ -198,17 +203,17 @@ module MyMedia
         msg = "the %s %s %s" % [notice, @public_type.sub(/s$/,''), target_url]
       end
       
-      sps_message = [@sps[:default_subscriber] + ': publish', @public_type, 
+      sps_message = ['publish', @public_type, 
                     target_url, static_url, "'" + raw_msg + "'"]            
 
-      topic, msg = sps_message.join(' ').split(/:\s*/,2)
-      send_message(topic: topic, msg: msg)
+      send_message(msg: sps_msg.join(' '))
 
       static_url
       
     end
     
     def normalize(s)
+
       r = s.downcase.gsub(/\s#\w+/,'').strip.gsub(/\W/,'-').gsub(/-{2,}/,'-').gsub(/^-|-$/,'')
       return s.scan(/#(\w+)/)[0..1].join('_').downcase if r.empty?
       return r        
@@ -247,9 +252,9 @@ module MyMedia
   class Frontpage < Publisher
     
     def initialize(config: nil, public_type: '', rss: nil)
-
+      
       raise FrontpageException, "no config found" if config.nil?
-
+      
       c = SimpleConfig.new(config).to_h
 
       @home = c[:home]
@@ -258,7 +263,6 @@ module MyMedia
       @rss = rss
       @opts = {username: c[:username], password: c[:password]}
             
-      @logger = Logger.new('/tmp/mymedia.log','daily')
     end
     
     def publish_frontpage(s='index.html')    
@@ -274,6 +278,7 @@ module MyMedia
 
       raw_msg, static_url, target_url = \
           record[:title], record[:url], record[:static_url]
+
       dynarex_filepath = "%s/%s/dynarex.xml" % [@home, @public_type]
       raw_dynarex_filepath = "%s/r/%s/dynarex.xml" % [@home, @public_type]
       
@@ -281,15 +286,16 @@ module MyMedia
       publish_dynarex(raw_dynarex_filepath, record, {rss: @rss || false})          
 
       publish_timeline(raw_msg, static_url, target_url)         
+      send_message(msg: 'publish_to_lists completed')
  
     end
 
     
     def publish_timeline(raw_msg, static_url, target_url='')
-      
-      timeline_filepath = "%s/timeline/dynarex.xml" % @home    
 
+      timeline_filepath = "%s/timeline/dynarex.xml" % @home    
       record = Dynarex.new(@home + '/dynarex/main-directory.xml').find_by_title(@public_type)    
+
       thumbnail, subject_url = record.thumbnail, record.url
       
       content = {
@@ -299,7 +305,7 @@ module MyMedia
         subject_url: subject_url, 
             raw_url: target_url 
       }
-
+      
       publish_dynarex(timeline_filepath, content, rss: true)     
 
     end       
