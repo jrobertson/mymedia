@@ -205,8 +205,8 @@ module MyMedia
 
       # Make a static filename XML file copy?
       if File.extname(static_destination) == '.html' then
-        
-        xmlfilepath = src_path.sub('.html','.xml')
+
+        xmlfilepath = destination.sub('.html','.xml')
         
         if File.exists?(xmlfilepath) then
           FileUtils.cp xmlfilepath, static_destination.sub('.html','.xml')
