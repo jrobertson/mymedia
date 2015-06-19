@@ -26,6 +26,8 @@ module MyMedia
       @opts = opts
     end
     
+    protected
+    
     def publish_dynarex(dynarex_filepath='', \
           record={title: '',url: '', raw_url: ''}, options={})
 
@@ -64,7 +66,13 @@ module MyMedia
       dataisland = DataIsland.new(template_path, @opts)
 
       File.open(path2 + '/index.html','w'){|f| f.write dataisland.html_doc.xml pretty: true}
-    end    
+    end     
+
+    def send_message(topic: @sps[:default_subscriber], msg: msg)
+      
+      fqm = "%s: %s" % [topic, msg]    
+      SPSPub.notice fqm, address: @sps[:address]
+    end           
     
   end
   
@@ -237,11 +245,7 @@ module MyMedia
       end
     end
     
-    def send_message(topic: @sps[:default_subscriber], msg: msg)
-      
-      fqm = "%s: %s" % [topic, msg]    
-      SPSPub.notice fqm, address: @sps[:address]
-    end
+
 
   end
   
@@ -261,6 +265,7 @@ module MyMedia
       @index_page = c[:index_page] == 'true'
       @public_type = public_type
       @rss = rss
+      @sps = c[:sps]
       @opts = {username: c[:username], password: c[:password]}
             
     end
@@ -309,5 +314,6 @@ module MyMedia
       publish_dynarex(timeline_filepath, content, rss: true)     
 
     end       
+
   end
 end

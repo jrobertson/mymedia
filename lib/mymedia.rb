@@ -198,9 +198,21 @@ module MyMedia
       raw_static_destination = "%s/%s/%s" % [@home, 'r',static_path]
 
       static_destination = "%s/%s" % [@home, static_path]    
+
       #FileUtils.mkdir_p File.dirname(static_destination)
-      FileUtils.cp destination, static_destination
+      FileUtils.cp destination, static_destination      
       FileUtils.cp raw_destination, raw_static_destination
+
+      # Make a static filename XML file copy?
+      if File.extname(static_destination) == '.html' then
+        
+        xmlfilepath = src_path.sub('.html','.xml')
+        
+        if File.exists?(xmlfilepath) then
+          FileUtils.cp xmlfilepath, static_destination.sub('.html','.xml')
+        end
+
+      end
       
       target_url ||= "%s/%s" % [@website, public_path]
       static_url ||= "%s/%s" % [@website, static_path]
@@ -212,7 +224,7 @@ module MyMedia
       end
       
       sps_message = ['publish', @public_type, 
-                    target_url, static_url, "'" + raw_msg + "'"]            
+                    target_url, static_url, raw_msg]
 
       send_message(msg: sps_message.join(' '))
 
