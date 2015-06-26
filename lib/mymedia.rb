@@ -39,7 +39,7 @@ module MyMedia
         Dynarex.new(@schema)
       end
 
-      dynarex.create record, opt[:id]
+      dynarex.create record, id: opt[:id]
       dynarex.save dynarex_filepath
 
       publish_html(dynarex_filepath)  if @index_page == true
@@ -84,7 +84,7 @@ module MyMedia
     attr_reader :to_s
 
     def initialize(media_type: 'blog', public_type: 'blog', ext: 'txt', config: nil)
-     
+   
       super()      
 
       @schema = 'posts/post(title, url, raw_url)'      
@@ -95,6 +95,7 @@ module MyMedia
       
       @home = c[:home]
       @website = c[:website]    
+
       @dynamic_website = c[:dynamic_website]
       @www = c[:www]
       @domain = @website[/[^\.]+\.[^\.]+$/]

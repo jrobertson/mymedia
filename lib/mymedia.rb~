@@ -205,7 +205,7 @@ module MyMedia
 
       # Make a static filename XML file copy?
       if File.extname(static_destination) == '.html' then
-        puts 'destination : ' + destination.inspect
+
         xmlfilepath = destination.sub('.html','.xml')
         
         if File.exists?(xmlfilepath) then
@@ -213,7 +213,6 @@ module MyMedia
         end
 
       end
-      exit
       
       target_url ||= "%s/%s" % [@website, public_path]
       static_url ||= "%s/%s" % [@website, static_path]
