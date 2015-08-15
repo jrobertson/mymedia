@@ -133,11 +133,20 @@ module MyMedia
 
     def auto_copy_publish(raw_msg='')
 
-      filename = DirToXML.new(@media_src).select_by_ext(@ext)\
-        .sort_by(:last_modified).last[:name]  
+      #filename = DirToXML.new(@media_src).select_by_ext(@ext)\
+      #  .sort_by(:last_modified).last[:name]
+      dir = DirToXML.new(@media_src, recursive: true)
+      a = dir.last_modified
+      filename = File.join a.map {|x| x[:name]}
 
       copy_publish( filename ,raw_msg)
     end
+    
+    def basename(s1, s2)
+
+      (s2.split('/') - s1.split('/')).join('/')
+
+    end    
     
     def copy_publish(filename, raw_msg='')
       file_publish(File.join(@media_src,filename), raw_msg)
@@ -188,10 +197,14 @@ module MyMedia
       raw_msg = raw_msg.join if raw_msg.is_a? Array   
       
       static_filename = if raw_msg.length > 0 then
-        normalize(raw_msg) + File.extname(destination)    
+         normalize(raw_msg) + File.extname(destination)
       else
-        File.basename(src_path)
+        
+        basename(@media_src, src_path)
+        
       end
+      
+      
       
       static_path = "%s/%s/%s" % [@public_type, \
         Time.now.strftime('%Y/%b/%d').downcase, static_filename]
