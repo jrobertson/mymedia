@@ -136,8 +136,9 @@ module MyMedia
       #filename = DirToXML.new(@media_src).select_by_ext(@ext)\
       #  .sort_by(:last_modified).last[:name]
       dir = DirToXML.new(@media_src, recursive: true)
-      a = dir.last_modified
-      filename = File.join a.map {|x| x[:name]}
+      r = dir.last_modified
+      
+      filename = r.is_a?(Hash) ? r[:name] : File.join(r.map {|x| x[:name]})
 
       copy_publish( filename ,raw_msg)
     end
