@@ -68,7 +68,7 @@ module MyMedia
       File.open(path2 + '/index.html','w'){|f| f.write dataisland.html_doc.xml pretty: true}
     end     
 
-    def send_message(topic: @sps[:default_subscriber], msg: msg)
+    def send_message(topic: @sps[:default_subscriber], msg: '')
       
       fqm = "%s: %s" % [topic, msg]    
       SPSPub.notice fqm, address: @sps[:address]
