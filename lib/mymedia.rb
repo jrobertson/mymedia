@@ -30,7 +30,7 @@ module MyMedia
     
     def publish_dynarex(dynarex_filepath='', \
           record={title: '',url: '', raw_url: ''}, options={})
-
+      
       opt = {id: nil, rss: false}.merge(options)
 
       dynarex = if File.exists? dynarex_filepath then
@@ -41,12 +41,11 @@ module MyMedia
 
       dynarex.create record, id: opt[:id]
       dynarex.save dynarex_filepath
-
       publish_html(dynarex_filepath)  if @index_page == true
 
       
       if opt[:rss] == true then
-        
+
         dynarex.xslt_schema = dynarex.summary[:xslt_schema]
         rss_filepath = dynarex_filepath.sub(/\.xml$/,'_rss.xml')
         File.open(rss_filepath, 'w'){|f| f.write dynarex.to_rss }    
@@ -63,15 +62,19 @@ module MyMedia
       raise MyMediaPublisherException, \
           "template path: #{template_path} not found" unless \
                                                     File.exists?(template_path)
+=begin jr 040916      
       dataisland = DataIsland.new(template_path, @opts)
 
       File.open(path2 + '/index.html','w'){|f| f.write dataisland.html_doc.xml pretty: true}
+=end      
     end     
 
     def send_message(topic: @sps[:default_subscriber], msg: '')
-      
+
       fqm = "%s: %s" % [topic, msg]    
+
       SPSPub.notice fqm, address: @sps[:address]
+      sleep 0.02
     end           
     
   end
@@ -84,7 +87,7 @@ module MyMedia
     attr_reader :to_s
 
     def initialize(media_type: 'blog', public_type: 'blog', ext: 'txt', config: nil)
-   
+
       super()      
 
       @schema = 'posts/post(title, url, raw_url)'      
@@ -104,8 +107,9 @@ module MyMedia
       logfile = c[:log]
       
       @logger = nil
-      @logger = Logger.new(logfile,'daily') if logfile
-      @logger.info('inside MyMedia::Base') if @logger
+
+      #@logger = Logger.new(logfile,'daily') if logfile
+      #@logger.info('inside MyMedia::Base') if @logger
       
       @media_type = media_type
       @public_type = public_type ||= @media_type
@@ -133,14 +137,14 @@ module MyMedia
 
     def auto_copy_publish(raw_msg='')
 
-      #filename = DirToXML.new(@media_src).select_by_ext(@ext)\
-      #  .sort_by(:last_modified).last[:name]
       dir = DirToXML.new(@media_src, recursive: true)
+
       r = dir.last_modified
-      
+
       filename = r.is_a?(Hash) ? r[:name] : File.join(r.map {|x| x[:name]})
 
       copy_publish( filename ,raw_msg)
+
     end
     
     def basename(s1, s2)
@@ -158,7 +162,7 @@ module MyMedia
     
     def file_publish(src_path, raw_msg='')
 
-      raise @logger.debug("source file '%s' not found" % src_path) unless File.exists? src_path
+      #raise @logger.debug("source file '%s' not found" % src_path) unless File.exists? src_path
       ext = File.extname(src_path)
       @target_ext ||= ext
           
@@ -184,7 +188,7 @@ module MyMedia
       raw_msg = raw_msg.join ' ' if raw_msg.is_a? Array
 
       raw_msg = src_path[/([^\/]+)\.\w+$/,1] + ' ' + raw_msg if raw_msg[/^#/]
-      
+
       
       if block_given? then
         raw_msg, target_url = yield(destination, raw_destination) 
@@ -193,19 +197,16 @@ module MyMedia
         FileUtils.cp src_path, destination
         FileUtils.cp src_path, raw_destination
       end
-      
 
       raw_msg = raw_msg.join if raw_msg.is_a? Array   
-      
-      static_filename = if raw_msg.length > 0 then
+
+      static_filename = if raw_msg.to_s.length > 0 then
          normalize(raw_msg) + File.extname(destination)
       else
         
         basename(@media_src, src_path)
         
-      end
-      
-      
+      end      
       
       static_path = "%s/%s/%s" % [@public_type, \
         Time.now.strftime('%Y/%b/%d').downcase, static_filename]
@@ -215,8 +216,9 @@ module MyMedia
       static_destination = "%s/%s" % [@home, static_path]    
 
       #FileUtils.mkdir_p File.dirname(static_destination)
-      FileUtils.cp destination, static_destination      
-      FileUtils.cp raw_destination, raw_static_destination
+      FileUtils.cp destination, static_destination
+
+      #jr010817 FileUtils.cp raw_destination, raw_static_destination
 
       # Make a static filename XML file copy?
       if File.extname(static_destination) == '.html' then
@@ -232,7 +234,7 @@ module MyMedia
       target_url ||= "%s/%s" % [@website, public_path]
       static_url ||= "%s/%s" % [@website, static_path]
 
-      if raw_msg.length > 0 then
+      if raw_msg.to_s.length > 0 then
         msg = "%s %s" % [target_url, raw_msg ]
       else
         msg = "the %s %s %s" % [notice, @public_type.sub(/s$/,''), target_url]
@@ -313,7 +315,8 @@ module MyMedia
 
       dynarex_filepath = "%s/%s/dynarex.xml" % [@home, @public_type]
       raw_dynarex_filepath = "%s/r/%s/dynarex.xml" % [@home, @public_type]
-      
+
+
       publish_dynarex(dynarex_filepath, record, {rss: @rss || false})    
       publish_dynarex(raw_dynarex_filepath, record, {rss: @rss || false})          
 

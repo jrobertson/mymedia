@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'mymedia'
-  s.version = '0.2.12'
+  s.version = '0.2.13'
   s.summary = 'Makes publishing to the web easier'
   s.authors = ['James Robertson']
   s.files = Dir['lib/**/*.rb']
@@ -13,6 +13,6 @@ Gem::Specification.new do |s|
   s.signing_key = '../privatekeys/mymedia.pem'
   s.cert_chain  = ['gem-public_cert.pem']
   s.license = 'MIT'
-  s.email = 'james@r0bertson.co.uk'
+  s.email = 'james@jamesrobertson.eu'
   s.homepage = 'https://github.com/jrobertson/mymedia'
 end
