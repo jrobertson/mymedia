@@ -86,7 +86,8 @@ module MyMedia
 
     attr_reader :to_s
 
-    def initialize(media_type: 'blog', public_type: 'blog', ext: 'txt', config: nil)
+    def initialize(media_type: 'blog', public_type: 'blog', 
+                   ext: 'txt', config: nil, log: nil)
 
       super()      
 
@@ -104,13 +105,10 @@ module MyMedia
       @domain = @website[/[^\.]+\.[^\.]+$/]
 
       @sps = c[:sps]
-      logfile = c[:log]
       
-      @logger = nil
+      @log = log
 
-      #@logger = Logger.new(logfile,'daily') if logfile
-      #@logger.info('inside MyMedia::Base') if @logger
-      
+
       @media_type = media_type
       @public_type = public_type ||= @media_type
       
@@ -234,11 +232,7 @@ module MyMedia
       target_url ||= "%s/%s" % [@website, public_path]
       static_url ||= "%s/%s" % [@website, static_path]
 
-      if raw_msg.to_s.length > 0 then
-        msg = "%s %s" % [target_url, raw_msg ]
-      else
-        msg = "the %s %s %s" % [notice, @public_type.sub(/s$/,''), target_url]
-      end
+      msg = "%s %s" % [target_url, raw_msg ]
       
       sps_message = ['publish', @public_type, 
                     target_url, static_url, raw_msg]
@@ -255,26 +249,6 @@ module MyMedia
       return s.scan(/#(\w+)/)[0..1].join('_').downcase if r.empty?
       return r        
     end        
-    
-    def notice()
-      
-      case 
-        when Time.now.hour < 10
-          "morning"
-        when Time.now.hour < 12
-          "late morning"        
-        when Time.now.hour >= 12 && Time.now.hour <= 13
-          "lunch time"
-        when Time.now.hour > 13 &&  Time.now.hour < 16
-          "afternoon"
-        when Time.now.hour < 18
-          "late afternoon"        
-        when Time.now.hour >= 18
-          "evening"
-      end
-    end
-    
-
 
   end
   
