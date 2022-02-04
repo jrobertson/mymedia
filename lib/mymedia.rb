@@ -3,7 +3,6 @@
 # file: mymedia.rb
 
 require 'time'
-require 'fileutils'
 require 'logger'
 require 'dynarex'
 require 'sps-pub'
@@ -20,6 +19,7 @@ module MyMedia
 
 
   class Publisher
+    include RXFHelperModule
 
     def initialize(opts={})
       @index_page = true
@@ -33,7 +33,7 @@ module MyMedia
 
       opt = {id: nil, rss: false}.merge(options)
 
-      dynarex = if File.exists? dynarex_filepath then
+      dynarex = if FileX.exists? dynarex_filepath then
         Dynarex.new(dynarex_filepath)
       else
         Dynarex.new(@schema)
@@ -48,7 +48,7 @@ module MyMedia
 
         dynarex.xslt_schema = dynarex.summary[:xslt_schema]
         rss_filepath = dynarex_filepath.sub(/\.xml$/,'_rss.xml')
-        File.open(rss_filepath, 'w'){|f| f.write dynarex.to_rss }
+        FileX.write rss_filepath, dynarex.to_rss
       end
 
     end
@@ -61,7 +61,7 @@ module MyMedia
       return unless @index_page == true
       raise MyMediaPublisherException, \
           "template path: #{template_path} not found" unless \
-                                                    File.exists?(template_path)
+                                                    FileX.exists?(template_path)
 =begin jr 040916
       dataisland = DataIsland.new(template_path, @opts)
 
@@ -71,7 +71,7 @@ module MyMedia
 
     def publish_dxlite(dynarex_filepath='', record={title: '',url: ''})
 
-      dynarex = if File.exists? dynarex_filepath then
+      dynarex = if FileX.exists? dynarex_filepath then
         DxLite.new(dynarex_filepath)
       else
         DxLite.new(@schema)
@@ -92,12 +92,13 @@ module MyMedia
   end
 
   module IndexReader
+    include RXFHelperModule
 
     def browse()
 
       json_filepath = "%s/%s/dynarex.json" % [@home, @public_type]
 
-      if File.exists? json_filepath then
+      if FileX.exists? json_filepath then
 
         dx = DxLite.new(json_filepath)
         return dx.all
@@ -110,7 +111,7 @@ module MyMedia
 
       json_filepath = "%s/%s/dynarex.json" % [@home, @public_type]
 
-      if File.exists? json_filepath then
+      if FileX.exists? json_filepath then
 
         dx = DxLite.new(json_filepath)
         return dx.all.select {|x| x.title =~ /#{keyword}/i}
@@ -124,6 +125,7 @@ module MyMedia
   end
 
   class Base < Publisher
+    include RXFHelperModule
 
     attr_reader :to_s
 
@@ -221,14 +223,14 @@ module MyMedia
 
       raw_destination = "%s/%s/%s" % [@home, 'r', public_path]
 
-      if File.exists? raw_destination then
+      if FileX.exists? raw_destination then
         raw_destination = "%s/%s/%s" % [@home, 'r', public_path2]
         public_path = public_path2
       end
 
       destination = File.join(@home, public_path)
-      FileUtils.mkdir_p File.dirname(raw_destination)
-      FileUtils.mkdir_p File.dirname(destination)
+      FileX.mkdir_p File.dirname(raw_destination)
+      FileX.mkdir_p File.dirname(destination)
 
       raw_msg = raw_msg.join ' ' if raw_msg.is_a? Array
 
@@ -239,8 +241,8 @@ module MyMedia
         raw_msg, target_url = yield(destination, raw_destination)
         static_url = target_url
       else
-        FileUtils.cp src_path, destination
-        FileUtils.cp src_path, raw_destination
+        FileX.cp src_path, destination
+        FileX.cp src_path, raw_destination
       end
 
       raw_msg = raw_msg.join if raw_msg.is_a? Array
@@ -261,7 +263,7 @@ module MyMedia
       static_destination = "%s/%s" % [@home, static_path]
 
       #FileUtils.mkdir_p File.dirname(static_destination)
-      FileUtils.cp destination, static_destination
+      FileX.cp destination, static_destination
 
       #jr010817 FileUtils.cp raw_destination, raw_static_destination
 
@@ -270,8 +272,8 @@ module MyMedia
 
         xmlfilepath = destination.sub('.html','.xml')
 
-        if File.exists?(xmlfilepath) then
-          FileUtils.cp xmlfilepath, static_destination.sub('.html','.xml')
+        if FileX.exists?(xmlfilepath) then
+          FileX.cp xmlfilepath, static_destination.sub('.html','.xml')
         end
 
       end
