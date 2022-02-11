@@ -129,7 +129,7 @@ module MyMedia
 
     attr_reader :to_s
 
-    def initialize(media_type: 'blog', public_type: 'blog',
+    def initialize(media_type: 'blog', public_type: media_type,
                    ext: 'txt', config: nil, log: nil, debug: false)
 
       super()
@@ -162,7 +162,7 @@ module MyMedia
       @rss = false
       @debug = debug
 
-      Dir.chdir @home
+      DirX.chdir @home
 
     end
 
@@ -182,15 +182,18 @@ module MyMedia
 
       @log.info 'Base inside auto_copy_publish' if @log
       puts '@media_src: ' + @media_src.inspect if @debug
-      #exit
-      dir = DirToXML.new(@media_src, recursive: true, debug: false)
-      puts 'before dir.last_modified' if @debug
-      r = dir.last_modified
-      puts 'r: ' + r.inspect if @debug
 
-      filename = r.is_a?(Hash) ? r[:name] : File.join(r.map {|x| x[:name]})
+      # fetch the most recent file
+      r = FileX.ru_r @media_src
 
-      copy_publish( filename ,raw_msg, &blk)
+      if r then
+
+        puts 'r: ' + r.inspect if @debug
+
+        filename = r.sub(/^#{@media_src}/,'')
+        copy_publish( filename ,raw_msg, &blk)
+
+      end
 
     end
 
