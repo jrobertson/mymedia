@@ -10,6 +10,7 @@ require 'dir-to-xml'
 require 'dataisland'
 require 'increment'
 require 'simple-config'
+require 'rxfileio'
 
 
 module MyMedia
@@ -19,7 +20,7 @@ module MyMedia
 
 
   class Publisher
-    include RXFHelperModule
+    include RXFReadWriteModule
 
     def initialize(opts={})
       @index_page = true
@@ -92,7 +93,7 @@ module MyMedia
   end
 
   module IndexReader
-    include RXFHelperModule
+    include RXFRead
 
     def browse()
 
@@ -125,7 +126,7 @@ module MyMedia
   end
 
   class Base < Publisher
-    include RXFHelperModule
+    include RXFileIOModule
 
     attr_reader :to_s
 
@@ -141,6 +142,7 @@ module MyMedia
       c = SimpleConfig.new(config).to_h
 
       @home = c[:home]
+      puts '@home: ' + @home.inspect if @debug
       @media_src = "%s/media/%s" % [@home, media_type]
       @website = c[:website]
 
@@ -184,27 +186,29 @@ module MyMedia
       puts '@media_src: ' + @media_src.inspect if @debug
 
       # fetch the most recent file
-      r = FileX.ru_r @media_src
+      filename = FileX.ru_r @media_src
 
-      if r then
+      if filename then
 
-        puts 'r: ' + r.inspect if @debug
+        puts 'filename: ' + filename.inspect if @debug
 
-        filename = r.sub(/^#{@media_src}/,'')
         copy_publish( filename ,raw_msg, &blk)
 
       end
 
     end
 
-    def basename(s1, s2)
+    def basename(raw_s1, raw_s2)
+
+      s1 = raw_s1.sub(/dfs:\/\/[^\/]+/,'')
+      s2 = raw_s2.sub(/dfs:\/\/[^\/]+/,'')
 
       (s2.split('/') - s1.split('/')).join('/')
 
     end
 
     def copy_publish(filename, raw_msg='', &blk)
-      file_publish(File.join(@media_src,filename), raw_msg)
+      file_publish(filename, raw_msg)
     end
 
 
@@ -222,7 +226,7 @@ module MyMedia
 
       public_path2 = "%s/%s/%shrs%s%s" % [@public_type, \
         Time.now.strftime('%Y/%b/%d').downcase, Time.now.strftime('%H%M'),
-                                          Time.now.strftime('%S%2N'), @target_ext]
+                                       Time.now.strftime('%S%2N'), @target_ext]
 
       raw_destination = "%s/%s/%s" % [@home, 'r', public_path]
 
@@ -235,6 +239,11 @@ module MyMedia
       FileX.mkdir_p File.dirname(raw_destination)
       FileX.mkdir_p File.dirname(destination)
 
+      if @debug then
+        puts "file_publish() #50 mkdir_p %s" % [File.dirname(raw_destination)]
+        puts "file_publish() #70 mkdir_p %s" % [File.dirname(destination)]
+      end
+
       raw_msg = raw_msg.join ' ' if raw_msg.is_a? Array
 
       raw_msg = src_path[/([^\/]+)\.\w+$/,1] + ' ' + raw_msg if raw_msg[/^#/]
@@ -244,8 +253,21 @@ module MyMedia
         raw_msg, target_url = yield(destination, raw_destination)
         static_url = target_url
       else
+
+        if @debug then
+          puts "file_publish() #80 cp %s to %s" % [src_path, destination]
+          puts "file_publish() #90 cp %s to %s" % [src_path, destination]
+        end
+
         FileX.cp src_path, destination
         FileX.cp src_path, raw_destination
+
+        if @debug then
+          puts "file_publish() #100 copied %s to %s" % [src_path, destination]
+          puts "file_publish() #200 copied %s to %s" % \
+              [src_path, raw_destination]
+        end
+
       end
 
       raw_msg = raw_msg.join if raw_msg.is_a? Array
@@ -266,6 +288,12 @@ module MyMedia
       static_destination = "%s/%s" % [@home, static_path]
 
       #FileUtils.mkdir_p File.dirname(static_destination)
+
+      if @debug then
+        puts "file_publish() #300 copy %s to %s" % [destination,
+                                                      static_destination]
+      end
+
       FileX.cp destination, static_destination
 
       #jr010817 FileUtils.cp raw_destination, raw_static_destination
@@ -276,7 +304,13 @@ module MyMedia
         xmlfilepath = destination.sub('.html','.xml')
 
         if FileX.exists?(xmlfilepath) then
+
           FileX.cp xmlfilepath, static_destination.sub('.html','.xml')
+
+          if @debug then
+            puts "file_publish() #400 copied %s to %s" % [xmlfilepath, static_destination.sub('.html','.xml')]
+          end
+
         end
 
       end
