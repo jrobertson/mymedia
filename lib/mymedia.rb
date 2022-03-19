@@ -75,7 +75,7 @@ module MyMedia
       dynarex = if FileX.exists? dynarex_filepath then
         DxLite.new(dynarex_filepath)
       else
-        DxLite.new(@schema)
+        DxLite.new(@schema, order: 'descending')
       end
 
       dynarex.create record
@@ -151,6 +151,7 @@ module MyMedia
       @domain = @website[/[^\.]+\.[^\.]+$/]
 
       @sps = c[:sps]
+      @omit_html_ext = c[:omit_html_ext]
 
       @log = log
 
