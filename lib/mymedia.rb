@@ -11,6 +11,7 @@ require 'dataisland'
 require 'increment'
 require 'simple-config'
 require 'rxfileio'
+require 'wordsdotdat'
 
 
 module MyMedia
@@ -95,14 +96,36 @@ module MyMedia
   module IndexReader
     include RXFRead
 
-    def browse()
+    def browse(startswith=nil)
 
       json_filepath = "%s/%s/dynarex.json" % [@home, @public_type]
 
       if FileX.exists? json_filepath then
 
         dx = DxLite.new(json_filepath)
-        return dx.all
+
+        if startswith then
+
+          @stopwords = WordsDotDat.stopwords
+          q = startswith
+
+          r = dx.all.select do |x|
+
+            found = x.title.scan(/\b\w+/).select do |raw_word|
+
+              word = raw_word.downcase
+              word[0..(q.length-1)] == q and not @stopwords.include? word
+
+            end
+
+            found.any?
+          end
+
+        else
+
+          return dx.all
+
+        end
 
       end
 
