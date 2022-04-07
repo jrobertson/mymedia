@@ -76,7 +76,7 @@ module MyMedia
       dynarex = if FileX.exists? dynarex_filepath then
         DxLite.new(dynarex_filepath)
       else
-        DxLite.new(@schema, order: 'descending')
+        DxLite.new(@schema, order: 'descending', debug: @debug)
       end
 
       dynarex.create record
@@ -131,6 +131,25 @@ module MyMedia
 
     end
 
+    def find(keyword)
+
+      json_filepath = "%s/%s/dynarex.json" % [@home, @public_type]
+
+      if FileX.exists? json_filepath then
+
+        dx = DxLite.new(json_filepath)
+
+        return dx.all.find do |x|
+
+          regex = keyword.is_a?(String) ? /#{keyword}/i : keyword
+          x.title =~ regex
+
+        end
+
+      end
+
+    end
+
     def search(keyword)
 
       json_filepath = "%s/%s/dynarex.json" % [@home, @public_type]
@@ -138,7 +157,13 @@ module MyMedia
       if FileX.exists? json_filepath then
 
         dx = DxLite.new(json_filepath)
-        return dx.all.select {|x| x.title =~ /#{keyword}/i}
+
+        return dx.all.select do |x|
+
+          regex = keyword.is_a?(String) ? /#{keyword}/i : keyword
+          x.title =~ regex
+
+        end
 
       end
 
