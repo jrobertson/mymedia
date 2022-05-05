@@ -168,6 +168,20 @@ module MyMedia
       end
 
     end
+
+    def find_sourcefile(id)
+
+      json_filepath = "%s/%s/dynarex.json" % [@home, @public_type]
+
+      if FileX.exists? json_filepath then
+
+        dx = DxLite.new(json_filepath)
+        rx = dx.find_by_id(id)
+        Kvx.new(@home + rx.meta).file
+
+      end
+
+    end
   end
 
   class BaseException < Exception
