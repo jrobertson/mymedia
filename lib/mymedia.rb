@@ -18,8 +18,8 @@ module MyMedia
 
   class MyMediaPublisherException < Exception
   end
-
-
+  
+  
   class Publisher
     include RXFReadWriteModule
 
@@ -27,12 +27,12 @@ module MyMedia
       @index_page = true
       @opts = opts
     end
-
+    
     protected
-
+    
     def publish_dynarex(dynarex_filepath='', \
           record={title: '',url: '', raw_url: ''}, options={})
-
+      
       opt = {id: nil, rss: false}.merge(options)
 
       dynarex = if FileX.exists? dynarex_filepath then
@@ -45,7 +45,7 @@ module MyMedia
       dynarex.save dynarex_filepath
       publish_html(dynarex_filepath)  if @index_page == true
 
-
+      
       if opt[:rss] == true then
 
         dynarex.xslt_schema = dynarex.summary[:xslt_schema]
@@ -57,19 +57,19 @@ module MyMedia
 
     def publish_html(filepath)
 
-      path2 = File.dirname(filepath)
+      path2 = File.dirname(filepath)  
       template_path = File.join path2, 'index-template.html'
 
-      return unless @index_page == true
+      return unless @index_page == true 
       raise MyMediaPublisherException, \
           "template path: #{template_path} not found" unless \
                                                     FileX.exists?(template_path)
-=begin jr 040916
+=begin jr 040916      
       dataisland = DataIsland.new(template_path, @opts)
 
       File.open(path2 + '/index.html','w'){|f| f.write dataisland.html_doc.xml pretty: true}
-=end
-    end
+=end      
+    end     
 
     def publish_dxlite(dynarex_filepath='', record={title: '',url: ''})
 
@@ -85,12 +85,12 @@ module MyMedia
 
     def send_message(topic: @sps[:default_subscriber], msg: '')
 
-      fqm = "%s: %s" % [topic, msg]
+      fqm = "%s: %s" % [topic, msg]    
 
       SPSPub.notice fqm, address: @sps[:address]
       sleep 0.3
-    end
-
+    end           
+    
   end
 
   module IndexReader
@@ -98,7 +98,7 @@ module MyMedia
 
     def browse(startswith=nil)
 
-      json_filepath = "%s/%s/dynarex.json" % [@home, @public_type]
+      json_filepath = "%s/%s/%s/dynarex.json" % [@home, @www, @public_type]
 
       if FileX.exists? json_filepath then
 
@@ -186,27 +186,29 @@ module MyMedia
 
   class BaseException < Exception
   end
-
+  
   class Base < Publisher
     include RXFileIOModule
 
-    attr_reader :to_s
+    attr_reader :to_s, :destination
 
     def initialize(media_type: 'blog', public_type: media_type,
-                   ext: 'txt', config: nil, log: nil, debug: false)
+                   ext: 'txt', config: nil, log: nil, now: Time.now,
+                   debug: false)
 
-      super()
+      super()      
 
-      @schema = 'posts/post(title, url, raw_url)'
+      @now = now
+      @schema = 'posts/post(title, url, raw_url)'      
 
-      raise BaseException, "no config found" if config.nil?
+      raise BaseException, "no config found" unless config
 
       c = SimpleConfig.new(config).to_h
-
+      
       @home = c[:home]
       puts '@home: ' + @home.inspect if @debug
       @media_src = "%s/media/%s" % [@home, media_type]
-      @website = c[:website]
+      @website = c[:website]    
 
       @dynamic_website = c[:dynamic_website]
       @www = c[:www]
@@ -214,33 +216,33 @@ module MyMedia
 
       @sps = c[:sps]
       @omit_html_ext = c[:omit_html_ext]
-
+      
       @log = log
 
 
       @media_type = media_type
       @public_type = public_type ||= @media_type
-
+      
       @xslt_schema = 'channel[title:title,description:desc]/' + \
                                                 'item(title:title,link:url)'
       @ext = ext
       @rss = false
       @debug = debug
-
+      
       DirX.chdir @home
 
     end
-
+        
     def add_feed_item(raw_msg, record, options={})
-
-      dynarex_filepath = File.join([@home, @public_type, 'dynarex.xml'])
-      id = Increment.update(File.join([@home, @public_type, 'counter.txt']))
+      
+      dynarex_filepath = File.join([@home, @public_type, 'dynarex.xml'])        
+      id = Increment.update(File.join([@home, @public_type, 'counter.txt'])) 
       static_url = @static_baseurl + id
       record[:uri] = static_url
-
-      publish_dynarex(dynarex_filepath, record, {id: id}.merge(options))
-      publish_timeline(raw_msg, static_url)
-      publish_html(@home + '/index.html')
+      
+      publish_dynarex(dynarex_filepath, record, {id: id}.merge(options))                    
+      publish_timeline(raw_msg, static_url)         
+      publish_html(@home + '/index.html') 
     end
 
     def auto_copy_publish(raw_msg='', &blk)
@@ -260,7 +262,7 @@ module MyMedia
       end
 
     end
-
+    
     def basename(raw_s1, raw_s2)
 
       s1 = raw_s1.sub(/dfs:\/\/[^\/]+/,'')
@@ -268,38 +270,40 @@ module MyMedia
 
       (s2.split('/') - s1.split('/')).join('/')
 
-    end
-
+    end    
+    
     def copy_publish(filename, raw_msg='', &blk)
       file_publish(filename, raw_msg)
     end
-
+        
 
     private
+    
+    def file_publish(src_path, raw_msg='', sps: true)
 
-    def file_publish(src_path, raw_msg='')
-
-      #raise @logger.debug("source file '%s' not found" % src_path) unless File.exists? src_path
       ext = File.extname(src_path)
       @target_ext ||= ext
-
+          
       public_path = "%s/%s/%shrs%s" % [@public_type, \
-        Time.now.strftime('%Y/%b/%d').downcase, Time.now.strftime('%H%M'),
+        @now.strftime('%Y/%b/%d').downcase, @now.strftime('%H%M'),
                                       @target_ext]
 
       public_path2 = "%s/%s/%shrs%s%s" % [@public_type, \
-        Time.now.strftime('%Y/%b/%d').downcase, Time.now.strftime('%H%M'),
-                                       Time.now.strftime('%S%2N'), @target_ext]
-
-      raw_destination = "%s/%s/%s" % [@home, 'r', public_path]
-
+        @now.strftime('%Y/%b/%d').downcase, @now.strftime('%H%M'),
+                                       @now.strftime('%S%2N'), @target_ext]
+      
+      raw_destination = File.join(@home, @www, 'r', public_path)
+      
       if FileX.exists? raw_destination then
-        raw_destination = "%s/%s/%s" % [@home, 'r', public_path2]
+        raw_destination = File.join(@home, @www, 'r', public_path2)
         public_path = public_path2
       end
 
-      destination = File.join(@home, public_path)
+      destination = File.join(@home, @www, public_path)
+      puts 'before raw_destination: ' + raw_destination.inspect if @debug
       FileX.mkdir_p File.dirname(raw_destination)
+
+      puts 'before destination: ' + destination.inspect if @debug
       FileX.mkdir_p File.dirname(destination)
 
       if @debug then
@@ -311,9 +315,9 @@ module MyMedia
 
       raw_msg = src_path[/([^\/]+)\.\w+$/,1] + ' ' + raw_msg if raw_msg[/^#/]
 
-
+      
       if block_given? then
-        raw_msg, target_url = yield(destination, raw_destination)
+        raw_msg, target_url = yield(destination, raw_destination) 
         static_url = target_url
       else
 
@@ -333,22 +337,21 @@ module MyMedia
 
       end
 
-      raw_msg = raw_msg.join if raw_msg.is_a? Array
+      raw_msg = raw_msg.join if raw_msg.is_a? Array   
 
       static_filename = if raw_msg.to_s.length > 0 then
          normalize(raw_msg) + File.extname(destination)
       else
-
+        
         basename(@media_src, src_path)
-
-      end
-
+        
+      end      
+      
       static_path = "%s/%s/%s" % [@public_type, \
-        Time.now.strftime('%Y/%b/%d').downcase, static_filename]
-
-      raw_static_destination = "%s/%s/%s" % [@home, 'r',static_path]
-
-      static_destination = "%s/%s" % [@home, static_path]
+        @now.strftime('%Y/%b/%d').downcase, static_filename]
+      
+      raw_static_destination = File.join(@home, @www, 'r',static_path)
+      static_destination = File.join(@home, @www, static_path)
 
       #FileUtils.mkdir_p File.dirname(static_destination)
 
@@ -365,7 +368,7 @@ module MyMedia
       if File.extname(static_destination) == '.html' then
 
         xmlfilepath = destination.sub('.html','.xml')
-
+        
         if FileX.exists?(xmlfilepath) then
 
           FileX.cp xmlfilepath, static_destination.sub('.html','.xml')
@@ -377,40 +380,41 @@ module MyMedia
         end
 
       end
-
+      
       target_url ||= "%s/%s" % [@website, public_path]
       static_url ||= "%s/%s" % [@website, static_path]
 
       msg = "%s %s" % [target_url, raw_msg ]
-
-      sps_message = ['publish', @public_type,
+      
+      sps_message = ['publish', @public_type, 
                     target_url, static_url, raw_msg]
 
-      send_message(msg: sps_message.join(' '))
+      send_message(msg: sps_message.join(' ')) if sps
 
       static_url
-
+      
     end
-
+    
     def normalize(s)
 
-      r = s.downcase.gsub(/\s#\w+/,'').strip.gsub(/\W/,'-').gsub(/-{2,}/,'-').gsub(/^-|-$/,'')
+      r = s.downcase.gsub(/\s#\w+/,'').strip.gsub(/\W/,'-').gsub(/-{2,}/,'-')\
+          .gsub(/^-|-$/,'')
       return s.scan(/#(\w+)/)[0..1].join('_').downcase if r.empty?
-      return r
-    end
+      return r        
+    end        
 
   end
-
-
+  
+  
   class FrontpageException < Exception
   end
-
+  
   class Frontpage < Publisher
-
+    
     def initialize(config: nil, public_type: '', rss: nil)
-
+      
       raise FrontpageException, "no config found" if config.nil?
-
+      
       c = SimpleConfig.new(config).to_h
 
       @home = c[:home]
@@ -419,56 +423,56 @@ module MyMedia
       @rss = rss
       @sps = c[:sps]
       @opts = {username: c[:username], password: c[:password]}
-
+            
     end
+    
+    def publish_frontpage(s='index.html')    
 
-    def publish_frontpage(s='index.html')
-
-      publish_html(@home + '/' + s)
+      publish_html(@home + '/' + s) 
       'frontpage published'
-    end
+    end  
 
-
+        
     def publish_to_lists(record={}, public_type=nil)
-
+      
       @log.info 'inside publish_to_lists' if @log
-
+      
       @public_type = public_type if public_type
 
       raw_msg, static_url, target_url = \
           record[:title], record[:url], record[:static_url]
 
-      dynarex_filepath = "%s/%s/dynarex.xml" % [@home, @public_type]
-      raw_dynarex_filepath = "%s/r/%s/dynarex.xml" % [@home, @public_type]
+      dynarex_filepath = File.join(@home, @www, @public_type, 'dynarex.xml')
+      raw_dynarex_filepath = File.join(@home, @www, 'r', @public_type, 'dynarex.xml')
 
+      publish_dynarex(dynarex_filepath, record, {rss: @rss || false})    
+      publish_dynarex(raw_dynarex_filepath, record, {rss: @rss || false})          
 
-      publish_dynarex(dynarex_filepath, record, {rss: @rss || false})
-      publish_dynarex(raw_dynarex_filepath, record, {rss: @rss || false})
-
-      publish_timeline(raw_msg, static_url, target_url)
+      publish_timeline(raw_msg, static_url, target_url)         
       send_message(msg: 'publish_to_lists completed')
-
+ 
     end
 
-
+    
     def publish_timeline(raw_msg, static_url, target_url='')
 
-      timeline_filepath = "%s/timeline/dynarex.xml" % @home
-      record = Dynarex.new(@home + '/dynarex/main-directory.xml').find_by_title(@public_type)
+      timeline_filepath = File.join(@home, @www, 'timeline', 'dynarex.xml')
+      main_dir = File.join(@home, @www, 'dynarex', 'main-directory.xml')
+      record = Dynarex.new(main_dir).find_by_title(@public_type)
 
       thumbnail, subject_url = record.thumbnail, record.url
-
+      
       content = {
-              title: raw_msg,
+              title: raw_msg, 
                 url: static_url,
-          thumbnail: thumbnail,
-        subject_url: subject_url,
-            raw_url: target_url
+          thumbnail: thumbnail, 
+        subject_url: subject_url, 
+            raw_url: target_url 
       }
+      
+      publish_dynarex(timeline_filepath, content, rss: true)     
 
-      publish_dynarex(timeline_filepath, content, rss: true)
-
-    end
+    end       
 
   end
 end
