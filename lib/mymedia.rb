@@ -14,6 +14,18 @@ require 'rxfileio'
 require 'wordsdotdat'
 
 
+module StringFilter
+  
+  def normalize(s)
+
+    r = s.downcase.gsub(/\s#\w+/,'').strip.gsub(/\W/,'-').gsub(/-{2,}/,'-')\
+        .gsub(/^-|-$/,'')
+    return s.scan(/#(\w+)/)[0..1].join('_').downcase if r.empty?
+    return r        
+  end      
+  
+end
+
 module MyMedia
 
   class MyMediaPublisherException < Exception
@@ -183,12 +195,15 @@ module MyMedia
 
     end
   end
+  
+
 
   class BaseException < Exception
   end
   
   class Base < Publisher
     include RXFileIOModule
+    include StringFilter
 
     attr_reader :to_s, :destination
 
@@ -393,15 +408,7 @@ module MyMedia
 
       static_url
       
-    end
-    
-    def normalize(s)
-
-      r = s.downcase.gsub(/\s#\w+/,'').strip.gsub(/\W/,'-').gsub(/-{2,}/,'-')\
-          .gsub(/^-|-$/,'')
-      return s.scan(/#(\w+)/)[0..1].join('_').downcase if r.empty?
-      return r        
-    end        
+    end      
 
   end
   
