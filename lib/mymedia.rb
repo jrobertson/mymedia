@@ -14,6 +14,9 @@ require 'rxfileio'
 require 'wordsdotdat'
 
 
+require 'rxfileio'
+require 'wordsdotdat'
+
 module StringFilter
   
   def normalize(s)
@@ -35,9 +38,10 @@ module MyMedia
   class Publisher
     include RXFReadWriteModule
 
-    def initialize(opts={})
+    def initialize(opts={}, debug: false)
       @index_page = true
       @opts = opts
+      @debug = debug
     end
     
     protected
@@ -50,7 +54,10 @@ module MyMedia
       dynarex = if FileX.exists? dynarex_filepath then
         Dynarex.new(dynarex_filepath)
       else
-        Dynarex.new(@schema)
+        puts '@schema: ' + @schema.inspect if @debug
+        dx = Dynarex.new(@schema)
+        dx.xslt_schema = @xslt_schema
+        dx
       end
 
       dynarex.create record, id: opt[:id]
@@ -145,7 +152,7 @@ module MyMedia
 
     def find(keyword)
 
-      json_filepath = "%s/%s/dynarex.json" % [@home, @public_type]
+      json_filepath = File.join(@home, @www, @public_type, 'dynarex.json')
 
       if FileX.exists? json_filepath then
 
@@ -164,7 +171,7 @@ module MyMedia
 
     def search(keyword)
 
-      json_filepath = "%s/%s/dynarex.json" % [@home, @public_type]
+      json_filepath = File.join(@home, @www, @public_type, 'dynarex.json')
 
       if FileX.exists? json_filepath then
 
@@ -183,7 +190,7 @@ module MyMedia
 
     def find_sourcefile(id)
 
-      json_filepath = "%s/%s/dynarex.json" % [@home, @public_type]
+      json_filepath = File.join(@home, @www, @public_type, 'dynarex.json')
 
       if FileX.exists? json_filepath then
 
@@ -250,8 +257,8 @@ module MyMedia
         
     def add_feed_item(raw_msg, record, options={})
       
-      dynarex_filepath = File.join([@home, @public_type, 'dynarex.xml'])        
-      id = Increment.update(File.join([@home, @public_type, 'counter.txt'])) 
+      dynarex_filepath = File.join([@home, @www, @public_type, 'dynarex.xml'])        
+      id = Increment.update(File.join([@home, @www, @public_type, 'counter.txt'])) 
       static_url = @static_baseurl + id
       record[:uri] = static_url
       
@@ -418,18 +425,24 @@ module MyMedia
   
   class Frontpage < Publisher
     
-    def initialize(config: nil, public_type: '', rss: nil)
+    def initialize(config: nil, public_type: '', rss: nil, debug: false)
       
       raise FrontpageException, "no config found" if config.nil?
+      
+      @debug = debug
       
       c = SimpleConfig.new(config).to_h
 
       @home = c[:home]
+      @www = c[:www]
       @index_page = c[:index_page] == 'true'
       @public_type = public_type
       @rss = rss
       @sps = c[:sps]
       @opts = {username: c[:username], password: c[:password]}
+      @schema  = 'posts/post(url, title, meta)'
+      @xslt_schema = 'channel[title:title,description:desc]/' + \
+                                                'item(title:title,link:url)'
             
     end
     
@@ -449,13 +462,19 @@ module MyMedia
       raw_msg, static_url, target_url = \
           record[:title], record[:url], record[:static_url]
 
+      puts 'vars: ' + [@home, @www, @public_type].inspect if @debug
+      
       dynarex_filepath = File.join(@home, @www, @public_type, 'dynarex.xml')
       raw_dynarex_filepath = File.join(@home, @www, 'r', @public_type, 'dynarex.xml')
 
       publish_dynarex(dynarex_filepath, record, {rss: @rss || false})    
       publish_dynarex(raw_dynarex_filepath, record, {rss: @rss || false})          
 
-      publish_timeline(raw_msg, static_url, target_url)         
+      # 26-feb-2023 the following line was disabled because there's a 
+      # better alternative to updating a timeline using the noticesys gem. 
+      # to-do: Somehow integrate this with the new system.
+      #
+      #publish_timeline(raw_msg, static_url, target_url)         
       send_message(msg: 'publish_to_lists completed')
  
     end
